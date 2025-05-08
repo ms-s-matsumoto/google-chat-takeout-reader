@@ -283,7 +283,7 @@
             chatList.empty();
             chatList.append($('<h6 class="mt-3">Select chat to view</h6>'));  
             for (const chatId in chatMessageFiles) {
-                const listItem = $('<li class="list-group-item"></li>').html(`<a href="#" onclick="readAndDisplayJsonFile('${chatId}')">${getChatMembersTitle(chatId)}</a> <span class="show-opts badge"><a href="#" onclick="showOptsForm('${chatId}')">opts</a></span>`);
+                const listItem = $('<li class="list-group-item"></li>').html(`<a href="#" onclick="readAndDisplayJsonFile('${chatId}')">${getChatMembersTitle(chatId)} ${chatId}</a> <span class="show-opts badge"><a href="#" onclick="showOptsForm('${chatId}')">opts</a></span>`);
                 const formDiv = $(`<div class="chat-opts" id="opts-${chatId}"></div`);
                 const formItem = $(`<form id="opts-form-${chatId}" onsubmit="readAndDisplayJsonFile('${chatId}')"></form>`);
                 formItem.append(`
