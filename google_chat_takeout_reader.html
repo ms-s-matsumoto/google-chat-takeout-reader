@@ -204,6 +204,23 @@
             return date.toLocaleString();
         }
 
+        function parseJapaneseDateToJST(japaneseDateStr) {
+            // message.jsonのcreated_dateは"2020年10月14日水曜日 9:02:15 UTC"となっている
+            // UTCとあるが内容は日本時間なので+9時間する必要はない
+
+            // 不要な日本語の曜日を削除し、ISO形式へ整形
+            const cleaned = japaneseDateStr
+                .replace(/年|\/|-/g, '-')       // 年 → 「-」
+                .replace(/月/g, '-')            // 月 → 「-」
+                .replace(/日.*? /, ' ')         // 日と曜日を削除（例：14日水曜日 → 14）
+                .trim();
+
+            // Date オブジェクトとして解釈
+            const date = new Date(cleaned);
+
+            return date.toLocaleString();
+        }
+
         async function addToFileCache(itemPath, entry) {
             const chatId = getDirectoryName(itemPath);
 
@@ -426,7 +443,7 @@
                     continue;
                 }
 
-                let message = `<b>${json.messages[i].creator.name}</b> ${formatTimestamp(json.messages[i].created_date)}<br>`;
+                let message = `<b>${json.messages[i].creator.name}</b> ${parseJapaneseDateToJST(json.messages[i].created_date)}<br>`;
                 if ("text" in json.messages[i]) {
                     message += `${json.messages[i].text}<br>`;
                 }
