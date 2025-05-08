@@ -98,6 +98,9 @@
             padding: 3pt 3pt 0 3pt;
             display: inline-block;
         }
+        #chatSearch {
+            display: none;
+        }
         .nav {
             padding: 6pt;
             background-color: #ececec;
@@ -125,6 +128,7 @@
         <div class="row">
             <div class="col-md-3">
                 <button id="select-directory" class="btn btn-success btn-sm">Select Takeout Directory</button>
+                <input type="text" id="chatSearch" class="form-control mt-3" placeholder="Search chats...">
                 <ul id="chatList" class="list-group mt-3"><i>Choose the directory of uncompressed Takeout files</i></ul>
             </div>
             <div class="col-md-8">
@@ -294,33 +298,45 @@
             await pickDirectory();
             console.log("Chats loaded")
 
+            $('#chatSearch').show();
             const chatList = $('#chatList');
+            const chatSearch = $('#chatSearch');
 
             if (Object.keys(chatMessageFiles).length == 0) {
                 chatList.append(`<br><i>No chats found</i>`);
                 return;
             }
 
-            chatList.empty();
-            chatList.append($('<h6 class="mt-3">Select chat to view</h6>'));
-            for (const chatId in chatMessageFiles) {
-                const listItem = $('<li class="list-group-item"></li>').html(`<a href="#" data-chatid="${chatId}" onclick="readAndDisplayJsonFile('${chatId}')">${getChatMembersTitle(chatId)} ${chatId}</a> <span class="show-opts badge"><a href="#" onclick="showOptsForm('${chatId}')">opts</a></span>`);
-                const formDiv = $(`<div class="chat-opts" id="opts-${chatId}"></div`);
-                const formItem = $(`<form id="opts-form-${chatId}" onsubmit="readAndDisplayJsonFile('${chatId}')"></form>`);
-                formItem.append(`
-                            <input type="checkbox" id="imagesOnly-${chatId}" name="imagesOnly" class="form-check-input">
-                            <label for="imagesOnly">Images Only</label>`);
-                for (const member of getChatMembers(chatId)) {
-                    formItem.append(`
-                            <br>
-                            <input type="checkbox" data-exclude-name="${member}" name="exclude" class="form-check-input">
-                            <label for="exclude">Hide ${member} messages</label>`);
+            function updateChatList() {
+                const searchTerm = chatSearch.val().toLowerCase();
+                chatList.empty();
+                chatList.append($('<h6 class="mt-3">Select chat to view</h6>'));
+                for (const chatId in chatMessageFiles) {
+                    const chatTitle = `${getChatMembersTitle(chatId).toLowerCase()}  ${chatId}`;
+                    if (searchTerm === '' || chatTitle.includes(searchTerm)) {
+                        const listItem = $('<li class="list-group-item"></li>').html(`<a href="#" data-chatid="${chatId}" onclick="readAndDisplayJsonFile('${chatId}')">${getChatMembersTitle(chatId)} ${chatId}</a> <span class="show-opts badge"><a href="#" onclick="showOptsForm('${chatId}')">opts</a></span>`);
+                        const formDiv = $(`<div class="chat-opts" id="opts-${chatId}"></div`);
+                        const formItem = $(`<form id="opts-form-${chatId}" onsubmit="readAndDisplayJsonFile('${chatId}')"></form>`);
+                        formItem.append(`
+                                    <input type="checkbox" id="imagesOnly-${chatId}" name="imagesOnly" class="form-check-input">
+                                    <label for="imagesOnly">Images Only</label>`);
+                        for (const member of getChatMembers(chatId)) {
+                            formItem.append(`
+                                    <br>
+                                    <input type="checkbox" data-exclude-name="${member}" name="exclude" class="form-check-input">
+                                    <label for="exclude">Hide ${member} messages</label>`);
+                        }
+                        formDiv.append(formItem);
+                        formDiv.append(`<button class="opts-btn btn btn-secondary btn-sm" onclick="readAndDisplayJsonFile('${chatId}')"">Apply</button>`)
+                        listItem.append(formDiv);
+                        chatList.append(listItem);
+                    }
                 }
-                formDiv.append(formItem);
-                formDiv.append(`<button class="opts-btn btn btn-secondary btn-sm" onclick="readAndDisplayJsonFile('${chatId}')"">Apply</button>`)
-                listItem.append(formDiv);
-                chatList.append(listItem);
+                highlightActiveChat();
             }
+
+            updateChatList();
+            chatSearch.on('input', updateChatList);
         }
 
         async function pickDirectory() {
@@ -329,6 +345,7 @@
                 const directoryHandle = await window.showDirectoryPicker({startIn: "downloads"});
                 $('#chat').empty();
                 $('#chat_header').hide();
+                $('#chatSearch').hide();
                 chatList.html(`<i>Loading chats...</i>`);
                 await listFilesRecursive(directoryHandle, chatList);
             } catch (err) {
