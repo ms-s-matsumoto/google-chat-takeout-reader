@@ -242,7 +242,7 @@
             try {
                 return URL.createObjectURL(file);
             } catch (e) {
-                console.error(e);
+                console.error(e, filename);
                 return "";
             }
         }
@@ -456,9 +456,31 @@
                 }
                 if ("attached_files" in json.messages[i]) {
                     for (const file of json.messages[i].attached_files) {
-                        // console.log("showing file: ", file);
-                        const imgSrc = getImgSrcPath(chatId, file.export_name);
-                        message += `<a href="${imgSrc}" target="_blank"><img src="${imgSrc}" class="thumbnail"></a><br>`;
+                        const fileType = getFileType(file.export_name);
+
+                        if (fileType === 'image') {
+                            const imgSrc = getImgSrcPath(chatId, file.export_name);
+                            message += `<a href="${imgSrc}" target="_blank"><img src="${imgSrc}" class="thumbnail"></a><br>`;
+                        } else if (fileType === 'video') {
+                            const imgSrc = getImgSrcPath(chatId, file.export_name);
+                            message += `<video src="${imgSrc}" controls width="40%"></video><br>`;
+                        } else {
+                            // その他のファイルはダウンロードリンクとして処理する
+                            const otherFile = fileCache[chatId][file.export_name];
+                            if (otherFile) {
+                                const blob = await otherFile.arrayBuffer();
+                                const dataView = new Uint8Array(blob);
+                                let binary = '';
+                                for (let i = 0; i < dataView.byteLength; i++) {
+                                    binary += String.fromCharCode(dataView[i]);
+                                }
+                                const base64String = window.btoa(binary);
+                                message += `<a href="data:application/octet-stream;base64,${base64String}" download="${file.export_name}">Download ${file.export_name}</a><br>`
+
+                            } else {
+                                message += `File: ${file.export_name}<br>`;
+                            }
+                        }
                     }
                 }
                 if ("reactions" in json.messages[i]) {
@@ -478,6 +500,24 @@
                     navItem.append(nextNav);
                     chatBox.append(navItem);
                 }
+            }
+        }
+
+        function getFileType(filename) {
+            const parts = filename.split('.');
+            if (parts.length > 1) {
+                const extension = parts.pop().toLowerCase(); // 最後の要素が拡張子
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+                    return 'image';
+                } else if (['mp4', 'webm'].includes(extension)) {
+                    return 'video';
+                } else if (['txt', 'log', 'csv'].includes(extension)) {
+                    return 'text';
+                } else {
+                    return 'other';
+                }
+            } else {
+                return 'other'; // 拡張子がない場合の処理
             }
         }
 
